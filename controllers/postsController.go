@@ -167,6 +167,54 @@ func PostList(c *gin.Context) {
 	})
 }
 
+func PostUpdate(c *gin.Context) {
+	//Get post Id
+	idRaw := c.Param("id")
+	id, err := strconv.ParseUint(idRaw, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request param"})
+		return
+	}
+	var req RequestPostBody
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Request Body"})
+	}
+	accountID, ok := c.Get("accountID")
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"error": "No acccount associated with jwt"})
+		return
+	}
+	var post models.Post
+	if err := initializers.DB.First(&post, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+		return
+	}
+	fmt.Println("Account Id is: ", post.Title)
+	if post.AccountID != accountID {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized Action"})
+		return
+	}
+
+	post = models.Post{
+		Title:     req.Title,
+		Body:      req.Body,
+		AccountID: post.AccountID,
+	}
+	// Or post.title = newTitle -> db.save(&post)
+	if err := initializers.DB.Create(&post).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to update post"})
+	}
+	resp := ResponsePost{
+		ID:        post.ID,
+		Title:     post.Title,
+		Body:      post.Body,
+		CreatedAt: post.CreatedAt,
+		UpdatedAt: post.UpdatedAt,
+	}
+	c.JSON(http.StatusOK, gin.H{"post": resp})
+
+}
+
 func PostDelete(c *gin.Context) {
 	// Get post ID param
 	idRaw := c.Param("id")
