@@ -187,15 +187,20 @@ func init() {
 }
 func main() {
 	router := gin.Default()
-	router.GET("validate/", middleware.RequireAuth, controllers.Validate)
 	// Account Handlers
+	router.GET("account/", middleware.RequireAuth, controllers.AccountDetail)
 	router.POST("account/create/", controllers.AccountCreate)
 	router.POST("account/login/", controllers.AccountLogin)
+	router.PUT("account/", middleware.RequireAuth, controllers.AccountUpdate)
+	router.DELETE("account/", middleware.RequireAuth, controllers.AccountDelete)
 
 	// Post Handlers
 	router.POST("posts/", middleware.RequireAuth, controllers.PostsCreate)
 	router.GET("posts/:id", middleware.RequireAuth, controllers.PostGet)
+	router.PUT("posts/:id", middleware.RequireAuth, controllers.PostUpdate)
 	router.GET("posts/", middleware.RequireAuth, controllers.PostList)
 	router.DELETE("posts/:id", middleware.RequireAuth, controllers.PostDelete)
+
+	//Bank
 	router.Run() // listen and serve on 0.0.0.0:8080
 }
