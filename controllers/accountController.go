@@ -20,11 +20,16 @@ type AccountBody struct {
 	Password string `json:"password" binding:"required,min=8,max=255"`
 }
 
+type EmailChange struct {
+	Email string `json:"email" binding:"required,email,max=255"`
+}
+
 type AccountResponse struct {
-	ID        uint      `json:"id"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        uint           `json:"id"`
+	Email     string         `json:"email"`
+	CreatedAt time.Time      `json:"created_at"`
+	Posts     []ResponsePost `json:"posts"`
+	UpdatedAt time.Time      `json:"updated_at"`
 }
 
 func AccountCreate(c *gin.Context) {
@@ -138,8 +143,85 @@ func AccountLogin(c *gin.Context) {
 
 }
 
-func Validate(c *gin.Context) {
+func AccountDetail(c *gin.Context) {
+	// Get user from jwt auth
+	accountID, ok := c.Get("accountID")
+
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No user associated in jwt"})
+		return
+	}
+
+	var account models.Account
+	if err := initializers.DB.Preload("Posts").First(&account, accountID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Associated user not found"})
+		return
+	}
+
+	var responsePosts []ResponsePost
+	for _, post := range account.Posts {
+		responsePosts = append(responsePosts, ResponsePost{
+			ID:        post.ID,
+			Title:     post.Title,
+			Body:      post.Body,
+			CreatedAt: post.CreatedAt,
+			UpdatedAt: post.UpdatedAt,
+		})
+	}
+	resp := AccountResponse{
+		ID:        account.ID,
+		Email:     account.Email,
+		CreatedAt: account.CreatedAt,
+		Posts:     responsePosts,
+		UpdatedAt: account.UpdatedAt,
+	}
 	c.JSON(http.StatusOK, gin.H{
-		"message": "I'm logged In",
+		"account": resp,
 	})
+
+}
+
+func AccountUpdate(c *gin.Context) {
+	// Get auth user account
+	accountID, err := c.Get("accountID")
+	if !err {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not associated with jwt"})
+		return
+	}
+	var req EmailChange
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Request Body"})
+		return
+	}
+	var existingAccount models.Account
+	if err := initializers.DB.Where("email = ?", req.Email).First(&existingAccount).Error; err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "Email already used"})
+		return
+	}
+
+	var account models.Account
+	if err := initializers.DB.First(&account, accountID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to fetch account"})
+		return
+	}
+
+	if err := initializers.DB.Model(&account).Update("email", req.Email).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to Update Account"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Account Updated"})
+}
+
+func AccountDelete(c *gin.Context) {
+	// Get Account ID jwt
+	accountID, ok := c.Get("accountID")
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No account associated with jwt"})
+		return
+	}
+	if err := initializers.DB.Delete(&models.Account{}, accountID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to delete account"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Account Deleted"})
 }
