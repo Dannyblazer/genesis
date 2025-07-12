@@ -201,6 +201,10 @@ func main() {
 	router.GET("posts/", middleware.RequireAuth, controllers.PostList)
 	router.DELETE("posts/:id", middleware.RequireAuth, controllers.PostDelete)
 
+	//Wallet Handlers
+	router.GET("wallet/", middleware.RequireAuth, controllers.WalletDetail)
+	router.POST("wallet/transfer/", middleware.RequireAuth, controllers.WalletTransfer)
+
 	//Bank
 	router.Run() // listen and serve on 0.0.0.0:8080
 }
