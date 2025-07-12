@@ -79,6 +79,19 @@ func AccountCreate(c *gin.Context) {
 		})
 		return
 	}
+
+	// Create wallet for User
+	wallet := models.Wallet{
+		Balance:   0.0,
+		Currency:  "NGN",
+		AccountID: account.ID,
+	}
+	if err := initializers.DB.Create(&wallet).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"erroor": "Error Creating Wallet for User",
+		})
+		return
+	}
 	resp := AccountResponse{
 		ID:        account.ID,
 		Email:     account.Email,
