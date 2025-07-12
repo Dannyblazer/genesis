@@ -148,6 +148,7 @@ func PostList(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to fetch post",
 		})
+		return
 	}
 
 	resps := make([]ResponsePost, len(posts))
