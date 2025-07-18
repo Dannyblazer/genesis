@@ -77,7 +77,7 @@ func WalletTransfer(c *gin.Context) {
 		return
 	}
 
-	log.Printf("Transfer request: accountID=%v, receiverEmail=%s, amount=%f", accountID, req.Email, req.Amount)
+	//log.Printf("Transfer request: accountID=%v, receiverEmail=%s, amount=%f", accountID, req.Email, req.Amount)
 
 	err := initializers.DB.Transaction(func(tx *gorm.DB) error {
 		var receiverWallet models.Wallet
@@ -122,7 +122,18 @@ func WalletTransfer(c *gin.Context) {
 			ToAccountID:   uint64(receiverWallet.AccountID),
 			Amount:        req.Amount,
 		}
-		if err := initializers.DB.Create(&transfer).Error; err != nil {
+		if err := tx.Create(&transfer).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Error Creating transfer record",
+			})
+			return err
+		}
+		entry := models.Entry{
+			AccountID: uint64(receiverWallet.AccountID),
+			Amount:    req.Amount,
+		}
+
+		if err := tx.Create(&entry).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Error Creating transfer record",
 			})
