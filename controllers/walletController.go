@@ -86,7 +86,10 @@ func WalletTransfer(c *gin.Context) {
 		return
 	}
 
-	//log.Printf("Transfer request: accountID=%v, receiverEmail=%s, amount=%f", accountID, req.Email, req.Amount)
+	if req.Amount < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid amount"})
+		return
+	}
 
 	err := initializers.DB.Transaction(func(tx *gorm.DB) error {
 		var receiverWallet models.Wallet
