@@ -204,6 +204,7 @@ func main() {
 	//Wallet Handlers
 	router.GET("wallet/", middleware.RequireAuth, controllers.WalletDetail)
 	router.POST("wallet/transfer/", middleware.RequireAuth, controllers.WalletTransfer)
+	router.GET("wallet/transfers_list/", middleware.RequireAuth, controllers.WalletTransferList)
 
 	//Bank
 	router.Run() // listen and serve on 0.0.0.0:8080
