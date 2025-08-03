@@ -16,6 +16,7 @@ type WalletBody struct {
 	ID        uint      `json:"id"`
 	Balance   float64   `json:"balance"`
 	Currency  string    `json:"currency"`
+	Status    string    `json:"status"`
 	AccountID uint      `json:"accountID"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -62,6 +63,7 @@ func WalletDetail(c *gin.Context) {
 		ID:        wallet.ID,
 		Balance:   float64(wallet.Balance),
 		Currency:  wallet.Currency,
+		Status:    string(wallet.Status),
 		AccountID: wallet.AccountID,
 		CreatedAt: wallet.CreatedAt,
 		UpdatedAt: wallet.UpdatedAt,
@@ -86,7 +88,10 @@ func WalletTransfer(c *gin.Context) {
 		return
 	}
 
-	//log.Printf("Transfer request: accountID=%v, receiverEmail=%s, amount=%f", accountID, req.Email, req.Amount)
+	if req.Amount < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid amount"})
+		return
+	}
 
 	err := initializers.DB.Transaction(func(tx *gorm.DB) error {
 		var receiverWallet models.Wallet
@@ -115,6 +120,13 @@ func WalletTransfer(c *gin.Context) {
 			}
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 			return err
+		}
+
+		if senderWallet.Status != "active" || receiverWallet.Status != "active" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Unable to complete Transfer because account is not active",
+			})
+			return gorm.ErrInvalidTransaction
 		}
 
 		if senderWallet.ID == receiverWallet.ID {
