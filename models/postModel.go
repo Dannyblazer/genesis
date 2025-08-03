@@ -8,3 +8,9 @@ type Post struct {
 	Body      string
 	AccountID uint
 }
+
+// type Tag struct {
+// 	gorm.Model
+// 	Name string
+
+// }
