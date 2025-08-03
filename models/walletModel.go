@@ -4,15 +4,24 @@ import (
 	"gorm.io/gorm"
 )
 
+type WalletStatus string
+
+const (
+	WalletStatusActive   WalletStatus = "active"
+	WalletStatusInactive WalletStatus = "inactive"
+	WalletStatusSuspend  WalletStatus = "suspend"
+)
+
 // Account represents the accounts table (equivalent to Wallet)
 type Wallet struct {
 	gorm.Model
 	AccountID         uint
-	Balance           int64      `gorm:"not null"`
-	Currency          string     `gorm:"type:varchar;not null"`
-	Entries           []Entry    `gorm:"foreignKey:AccountID;constraint:OnDelete:CASCADE"`
-	SentTransfers     []Transfer `gorm:"foreignKey:FromAccountID;constraint:OnDelete:CASCADE"`
-	ReceivedTransfers []Transfer `gorm:"foreignKey:ToAccountID;constraint:OnDelete:CASCADE"`
+	Balance           int64        `gorm:"not null"`
+	Currency          string       `gorm:"type:varchar;not null"`
+	Status            WalletStatus `gorm:"type:varchar;not null;default:'active'"`
+	Entries           []Entry      `gorm:"foreignKey:AccountID;constraint:OnDelete:CASCADE"`
+	SentTransfers     []Transfer   `gorm:"foreignKey:FromAccountID;constraint:OnDelete:CASCADE"`
+	ReceivedTransfers []Transfer   `gorm:"foreignKey:ToAccountID;constraint:OnDelete:CASCADE"`
 }
 
 // Entry represents the entries table
